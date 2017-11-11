@@ -1,12 +1,13 @@
 #!/usr/bin/env python2.7
+import os
 import smbus
 import mosquitto
 from twisted.internet import reactor, task
 
-MQTT_SERVER = 'rudy.at.hskrk.pl'
+MQTT_SERVER = os.environ['MQTT_SERVER']
 TOPIC_PREFIX = 'kdhome'
 
-smbus_bus = 1
+smbus_bus = int(os.environ['I2C_BUS'])
 input_expanders = (0x38, 0x3b)
 output_expanders = (0x39, 0x3a)
 

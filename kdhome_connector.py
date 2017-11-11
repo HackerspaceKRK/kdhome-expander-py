@@ -4,7 +4,7 @@ import smbus
 import mosquitto
 from twisted.internet import reactor, task
 
-MQTT_SERVER = 'rudy.at.hskrk.pl'
+MQTT_SERVER = os.environ['MQTT_SERVER']
 TOPIC_PREFIX = 'kdhome'
 
 
