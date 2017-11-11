@@ -1,31 +1,26 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2.7
+import os
+import smbus
+import mosquitto
+from twisted.internet import reactor, task
 
-import paho.mqtt.client as mqtt
-
-
-# The callback for when the client receives a CONNACK response from the server.
-def on_connect(client, userdata, flags, rc):
-
-	print('Connected with result code ' + str(rc))
-
-	client.publish('kdhome/_sys', 'input->output bridge connected')
-
-	client.subscribe('kdhome/input/+')
-
-	# spam_frame(client)
-	# spam_show(client)
-
-def on_message(client, userdata, msg):
-	channel, state = msg.topic.split('/')[-1], msg.payload
-
-	client.publish('kdhome/output/{}'.format(channel), state)
+MQTT_SERVER = 'rudy.at.hskrk.pl'
+TOPIC_PREFIX = 'kdhome'
 
 
-client = mqtt.Client()
-client.will_set('kdhome/_sys', 'input->output bridge disconnected')
-client.on_connect = on_connect
-client.on_message = on_message
+def output_callback(client, userdata, message):
+    channel, state = message.topic.split('/')[-1], message.payload
+    client.publish('kdhome/output/{}'.format(channel), state)
 
-client.connect("rudy.at.hskrk.pl", 1883, 60)
+mqttc = mosquitto.Mosquitto("kdhome_connector")
+mqttc.will_set("%s/dropped" % TOPIC_PREFIX, "Sorry, I seem to have died.")
+mqttc.connect(MQTT_SERVER, 1883, 60, True)
 
-client.loop_forever()
+mqttc.subscribe('%s/input/+' % TOPIC_PREFIX, qos=0)
+mqttc.on_message = output_callback
+
+task.LoopingCall(mqttc.loop_read).start(0.1)
+task.LoopingCall(mqttc.loop_write).start(0.1)
+task.LoopingCall(mqttc.loop_misc).start(5)
+
+reactor.run()
